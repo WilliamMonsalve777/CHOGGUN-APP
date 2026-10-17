@@ -20,8 +20,6 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - uses: android-actions/setup-android@v3
-
       - name: Instalar ImageMagick
         run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
 
@@ -73,6 +71,7 @@ jobs:
       - name: Compilar APK
         working-directory: build-app/android
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
