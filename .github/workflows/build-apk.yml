@@ -10,24 +10,76 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
+
       - uses: android-actions/setup-android@v3
-      - name: Instalar dependencias
-        run: npm ci || npm install
-      - name: Sincronizar Capacitor
-        run: npx cap sync android
+
+      - name: Instalar ImageMagick
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+
+      - name: Crear proyecto Android
+        run: |
+          set -e
+          test -f index.html || { echo "Falta index.html en la raiz del repositorio"; exit 1; }
+          test -f logo.png || { echo "Falta logo.png en la raiz del repositorio"; exit 1; }
+          mkdir -p build-app/www
+          cp index.html build-app/www/index.html
+          cp logo.png build-app/logo.png
+          cd build-app
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.choggun.app",
+            "appName": "CHOGGUN",
+            "webDir": "www",
+            "android": { "backgroundColor": "#0b1720" },
+            "plugins": {
+              "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#FFFCF3", "androidScaleType": "CENTER_CROP", "showSpinner": false },
+              "StatusBar": { "style": "DARK", "backgroundColor": "#0b1720", "overlaysWebView": false }
+            }
+          }
+          EOF
+          npx cap add android
+
+      - name: Poner icono y splash de CHOGGUN
+        working-directory: build-app
+        run: |
+          set -e
+          R=android/app/src/main/res
+          for pair in mdpi:1 hdpi:1.5 xhdpi:2 xxhdpi:3 xxxhdpi:4; do
+            d=${pair%%:*}; k=${pair##*:}
+            S=$(python3 -c "print(int(48*$k))"); F=$(python3 -c "print(int(108*$k))"); C=$(python3 -c "print(int(78*$k))"); H=$((S/2))
+            convert logo.png -resize ${S}x${S} $R/mipmap-$d/ic_launcher.png
+            convert logo.png -resize ${S}x${S} -alpha set \( -size ${S}x${S} xc:black -fill white -draw "circle $H,$H $H,0" \) -compose CopyOpacity -composite $R/mipmap-$d/ic_launcher_round.png
+            convert -size ${F}x${F} xc:none \( logo.png -resize ${C}x${C} \) -gravity center -composite $R/mipmap-$d/ic_launcher_foreground.png
+          done
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#FFFCF3</color>\n</resources>\n' > $R/values/ic_launcher_background.xml
+          for f in $(find $R -name splash.png); do
+            W=$(identify -format %w "$f"); Hh=$(identify -format %h "$f")
+            L=$(python3 -c "print(int(min($W,$Hh)*0.45))")
+            convert -size ${W}x${Hh} xc:'#FFFCF3' \( logo.png -resize ${L}x${L} \) -gravity center -composite "$f"
+          done
+          npx cap sync android
+
       - name: Compilar APK
-        working-directory: android
+        working-directory: build-app/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
+
+      - name: Renombrar APK
+        run: cp build-app/android/app/build/outputs/apk/debug/app-debug.apk CHOGGUN.apk
+
       - uses: actions/upload-artifact@v4
         with:
           name: CHOGGUN-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: CHOGGUN.apk
