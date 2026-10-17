@@ -1,0 +1,23 @@
+{
+	"appId": "com.choggun.app",
+	"appName": "CHOGGUN",
+	"webDir": "www",
+	"android": {
+		"backgroundColor": "#0b1720",
+		"allowMixedContent": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1200,
+			"launchAutoHide": true,
+			"backgroundColor": "#FFFCF3",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#0b1720",
+			"overlaysWebView": false
+		}
+	}
+}

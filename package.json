@@ -1,0 +1,23 @@
+{
+  "name": "choggun-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CHOGGUN — plataforma colaborativa para escritores, ilustradores y lectores",
+  "scripts": {
+    "build:web": "python3 web/build.py && cp web/dist/index.html www/index.html",
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "apk": "npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}
