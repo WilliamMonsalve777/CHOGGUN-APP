@@ -27,13 +27,15 @@ jobs:
         run: |
           set -e
           test -f index.html || { echo "Falta index.html en la raiz del repositorio"; exit 1; }
+          test -f icon.png || { echo "Falta icon.png en la raiz del repositorio"; exit 1; }
           test -f logo.png || { echo "Falta logo.png en la raiz del repositorio"; exit 1; }
           mkdir -p build-app/www
           cp index.html build-app/www/index.html
+          cp icon.png build-app/icon.png
           cp logo.png build-app/logo.png
           cd build-app
           npm init -y > /dev/null
-          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4
+          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4 @capacitor/browser@8.0.5
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.choggun.app",
@@ -41,7 +43,8 @@ jobs:
             "webDir": "www",
             "android": { "backgroundColor": "#0b1720" },
             "plugins": {
-              "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#FFFCF3", "androidScaleType": "CENTER_CROP", "showSpinner": false },
+              "CapacitorHttp": { "enabled": true },
+              "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#0b1720", "androidScaleType": "CENTER_CROP", "showSpinner": false },
               "StatusBar": { "style": "DARK", "backgroundColor": "#0b1720", "overlaysWebView": false }
             }
           }
@@ -56,15 +59,16 @@ jobs:
           for pair in mdpi:1 hdpi:1.5 xhdpi:2 xxhdpi:3 xxxhdpi:4; do
             d=${pair%%:*}; k=${pair##*:}
             S=$(python3 -c "print(int(48*$k))"); F=$(python3 -c "print(int(108*$k))"); C=$(python3 -c "print(int(78*$k))"); H=$((S/2))
-            convert logo.png -resize ${S}x${S} $R/mipmap-$d/ic_launcher.png
-            convert logo.png -resize ${S}x${S} -alpha set \( -size ${S}x${S} xc:black -fill white -draw "circle $H,$H $H,0" \) -compose CopyOpacity -composite $R/mipmap-$d/ic_launcher_round.png
-            convert -size ${F}x${F} xc:none \( logo.png -resize ${C}x${C} \) -gravity center -composite $R/mipmap-$d/ic_launcher_foreground.png
+            R8=$((S/5))
+            convert icon.png -resize ${S}x${S} \( -size ${S}x${S} xc:black -fill white -draw "roundrectangle 0,0 $((S-1)),$((S-1)) $R8,$R8" \) -alpha off -compose CopyOpacity -composite $R/mipmap-$d/ic_launcher.png
+            convert icon.png -resize ${S}x${S} \( -size ${S}x${S} xc:black -fill white -draw "circle $H,$H $H,0" \) -alpha off -compose CopyOpacity -composite $R/mipmap-$d/ic_launcher_round.png
+            convert -size ${F}x${F} xc:none \( icon.png -resize ${C}x${C} \) -gravity center -composite $R/mipmap-$d/ic_launcher_foreground.png
           done
-          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#FFFCF3</color>\n</resources>\n' > $R/values/ic_launcher_background.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#063B46</color>\n</resources>\n' > $R/values/ic_launcher_background.xml
           for f in $(find $R -name splash.png); do
             W=$(identify -format %w "$f"); Hh=$(identify -format %h "$f")
             L=$(python3 -c "print(int(min($W,$Hh)*0.45))")
-            convert -size ${W}x${Hh} xc:'#FFFCF3' \( logo.png -resize ${L}x${L} \) -gravity center -composite "$f"
+            convert -size ${W}x${Hh} xc:'#0b1720' \( logo.png -resize ${L}x${L} \) -gravity center -composite "$f"
           done
           npx cap sync android
 
