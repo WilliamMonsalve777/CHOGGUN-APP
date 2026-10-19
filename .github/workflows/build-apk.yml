@@ -35,7 +35,7 @@ jobs:
           cp logo.png build-app/logo.png
           cd build-app
           npm init -y > /dev/null
-          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4 @capacitor/browser@8.0.5
+          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4 @capacitor/browser@8.0.5 @capacitor/preferences@8.0.1
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.choggun.app",
@@ -43,7 +43,7 @@ jobs:
             "webDir": "www",
             "android": { "backgroundColor": "#0b1720" },
             "plugins": {
-              "CapacitorHttp": { "enabled": true },
+              "CapacitorHttp": { "enabled": false },
               "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#0b1720", "androidScaleType": "CENTER_CROP", "showSpinner": false },
               "StatusBar": { "style": "DARK", "backgroundColor": "#0b1720", "overlaysWebView": false }
             }
@@ -75,6 +75,8 @@ jobs:
       - name: Compilar APK
         working-directory: build-app/android
         run: |
+          # Firma fija: cada APK nuevo se instala encima del anterior sin perder la sesión.
+          if [ -f "$GITHUB_WORKSPACE/choggun-debug.keystore" ]; then mkdir -p ~/.android && cp "$GITHUB_WORKSPACE/choggun-debug.keystore" ~/.android/debug.keystore; fi
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
