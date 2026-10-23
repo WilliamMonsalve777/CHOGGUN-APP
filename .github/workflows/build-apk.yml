@@ -35,7 +35,7 @@ jobs:
           cp logo.png build-app/logo.png
           cd build-app
           npm init -y > /dev/null
-          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4 @capacitor/browser@8.0.5 @capacitor/preferences@8.0.1 @capgo/capacitor-social-login@8.7.5
+          npm install --no-audit --no-fund @capacitor/core@8.5.3 @capacitor/cli@8.5.3 @capacitor/android@8.5.3 @capacitor/app@8.1.2 @capacitor/share@8.0.3 @capacitor/splash-screen@8.0.2 @capacitor/status-bar@8.0.4 @capacitor/browser@8.0.5 @capacitor/preferences@8.0.1 @capacitor/geolocation@8.2.4 @capgo/capacitor-social-login@8.7.5
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.choggun.app",
@@ -51,6 +51,10 @@ jobs:
           }
           EOF
           npx cap add android
+          # Permisos de ubicación para Match (país, ciudad y distancia aproximada)
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q ACCESS_COARSE_LOCATION $M || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n</manifest>#' $M
+          grep -q ACCESS_COARSE_LOCATION $M || { echo "No se pudieron agregar los permisos de ubicación"; exit 1; }
 
       - name: Poner icono y splash de CHOGGUN
         working-directory: build-app
