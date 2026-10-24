@@ -83,11 +83,37 @@ jobs:
       - name: Compilar APK
         working-directory: build-app/android
         run: |
-          # Firma fija: cada APK nuevo se instala encima del anterior sin perder la sesión.
-          if [ -f "$GITHUB_WORKSPACE/choggun-debug.keystore" ]; then mkdir -p ~/.android && cp "$GITHUB_WORKSPACE/choggun-debug.keystore" ~/.android/debug.keystore; fi
+          set -e
+          # Firma fija OBLIGATORIA: siempre la misma huella SHA-1 (79:51:EE:...), la que está registrada
+          # en Google Cloud. Se configura directo en Gradle para que no dependa de ~/.android.
+          test -f "$GITHUB_WORKSPACE/choggun-debug.keystore" || { echo "Falta choggun-debug.keystore en la raiz del repositorio"; exit 1; }
+          cp "$GITHUB_WORKSPACE/choggun-debug.keystore" app/choggun-debug.keystore
+          cat >> app/build.gradle <<'EOF'
+
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile file('choggun-debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+              buildTypes {
+                  debug { signingConfig signingConfigs.debug }
+              }
+          }
+          EOF
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
+
+      - name: Comprobar la firma (SHA-1)
+        run: |
+          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)apksigner
+          SHA1=$($APKSIGNER verify --print-certs build-app/android/app/build/outputs/apk/debug/app-debug.apk | grep -m1 'SHA-1' | awk '{print $NF}')
+          echo "Huella SHA-1 del APK: $SHA1"
+          [ "$SHA1" = "7951ee36afadbf08a0b2a9224b11c9ecc4c376ce" ] || { echo "La firma no coincide con la registrada en Google Cloud"; exit 1; }
 
       - name: Renombrar APK
         run: cp build-app/android/app/build/outputs/apk/debug/app-debug.apk CHOGGUN.apk
