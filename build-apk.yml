@@ -55,6 +55,9 @@ jobs:
           M=android/app/src/main/AndroidManifest.xml
           grep -q ACCESS_COARSE_LOCATION $M || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n</manifest>#' $M
           grep -q ACCESS_COARSE_LOCATION $M || { echo "No se pudieron agregar los permisos de ubicación"; exit 1; }
+          # Volver a la app después de conectar Discord (com.choggun.app://auth)
+          grep -q 'android:scheme="com.choggun.app"' $M || sed -i '0,/<\/intent-filter>/s##</intent-filter>\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="com.choggun.app" android:host="auth" />\n            </intent-filter>#' $M
+          grep -q 'android:scheme="com.choggun.app"' $M || { echo "No se pudo agregar el enlace de regreso de Discord"; exit 1; }
 
       - name: Poner icono y splash de CHOGGUN
         working-directory: build-app
